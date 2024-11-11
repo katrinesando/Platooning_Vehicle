@@ -8,6 +8,7 @@ from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.iodevices import Ev3devSensor
 from pybricks.media.ev3dev import SoundFile, ImageFile
+from pybricks.messaging import BluetoothMailboxServer, TextMailbox, NumericMailbox
 from collections import *
 #from collections import counter
 
@@ -36,6 +37,10 @@ right_array=deque([0])
 left = None
 right = None
 white_count = 0
+
+# set up server
+server = BluetoothMailboxServer()
+mbox =  NumericMailbox('greeting',server)
 
 # Initialize the drive base.
 robot = DriveBase(motor_left, motor_right, wheel_diameter=55, axle_track=95) #Check for correct Parameter 
@@ -239,6 +244,7 @@ def color_num(color, color_list):
     elif color == Color.GREEN: # green
         return 3
     elif color == color_list[1]:  # blue
+        mbox.send(1) # stop
         return 4
     elif color == color_list[2]: # yellow
         return 5
@@ -336,9 +342,16 @@ while True:
     # Update sensor readings
     pressed = ev3.buttons.pressed()
     left_color, right_color = update_sensors()
-
-    # Handle state transitions
-    switch(transition_state(left_color, right_color))
+    
+    #connecting to client
+    server.wait_for_connection()
+    print('connected!')
+    mbox.wait()
+    print(mbox.read())
+    print(mbox.read())
+    mbox.send(1)
+    # Handle state transitions'
+    # switch(transition_state(left_color, right_color))
     # print(state)
     if pressed:
         print("reset")
@@ -349,3 +362,7 @@ while True:
         ev3.speaker.beep(500,100)
         pressed=False
     # print(time.time()-start)
+
+
+
+
