@@ -37,10 +37,13 @@ right_array=deque([0])
 left = None
 right = None
 white_count = 0
+isSEND=False
 
 # set up server
 server = BluetoothMailboxServer()
-mbox =  NumericMailbox('greeting',server)
+mbox =  TextMailbox('greeting',server)
+server.wait_for_connection()
+print('connected!')
 
 # Initialize the drive base.
 robot = DriveBase(motor_left, motor_right, wheel_diameter=55, axle_track=95) #Check for correct Parameter 
@@ -187,16 +190,21 @@ def transition_state(color_left, color_right):
     global lane_state
     global rounds
     global white_count
+    global isSEND
     allowed_dist = 170
     front, back = update_front_back()
 
     # check for obstacle and change lane
     if front < allowed_dist:
-        state=STATES[5]
-        return state
+        if isSEND==False:
+            mbox.send("Obstacle")
+            isSEND=True
+        return STATES[5]
     if back < allowed_dist and rounds != 1: #parking lot
         print("Should Park")
         print(back)
+        mbox.send("Parking")
+        mbox.send("NONE")
         return STATES[7]
 
     if front > allowed_dist:
@@ -225,9 +233,13 @@ def transition_state(color_left, color_right):
             white_count=0
             return STATES[3]
         if left_color == 4 or right_color == 4: #Blue - 3 sec stop
+            mbox.send("Hold")
+            
             return STATES[6]
 
         if left_color == 5 or right_color == 5: #Yellow - slow down 
+            mbox.send("Slow")
+            
             return STATES[2]
     
         if left_color == 6 and right_color == 6: #Red - lane switch
@@ -244,7 +256,6 @@ def color_num(color, color_list):
     elif color == Color.GREEN: # green
         return 3
     elif color == color_list[1]:  # blue
-        mbox.send(1) # stop
         return 4
     elif color == color_list[2]: # yellow
         return 5
@@ -259,6 +270,7 @@ def switch(state):
     global Speed
     global lane_state
     global white_count
+    global isSEND
     front, back = update_front_back()
     if state ==  "DRIVE":
         if white_count !=0: # makes car turn at a angle depending on the amount of whites
@@ -270,6 +282,8 @@ def switch(state):
         robot.drive(Speed/2,0)
         clear_array()
         wait(2000)
+        mbox.send("NONE")
+
     elif state ==  "TURN_LEFT":
         robot.drive(Speed,30 + white_count) 
         white_count=50
@@ -283,27 +297,31 @@ def switch(state):
             print("left")
             robot.drive(Speed,-70)
             wait(700)
+            mbox.send("NONE")
             robot.drive(Speed,0)
             wait(700)
             robot.drive(Speed,90)
             wait(300)
             print("end")
             lane_state =LANE_STATES[2]
-            clear_array()
+            
         elif lane_state=="RIGHT_LANE":
             print("right")
             robot.drive(Speed,70)
             wait(700)
+            mbox.send("NONE")
             robot.drive(Speed,0)
             wait(500)
             robot.drive(Speed,-90)
             wait(300)
             print("end")
             lane_state = LANE_STATES[1]
-            clear_array()
+            
         else:
             print("No lane detected")
             robot.drive(Speed,-45)
+        mbox.send("NONE")
+        isSEND=False
         clear_array()
     elif state == "HOLD":
         robot.drive(0,0)
@@ -311,6 +329,7 @@ def switch(state):
         robot.drive(Speed,0)
         clear_array()
         wait(300)
+        mbox.send("NONE")
     elif state == "PARK":
         robot.drive(Speed,0)
         wait(500)
@@ -344,14 +363,13 @@ while True:
     left_color, right_color = update_sensors()
     
     #connecting to client
-    server.wait_for_connection()
-    print('connected!')
-    mbox.wait()
-    print(mbox.read())
-    print(mbox.read())
-    mbox.send(1)
+   
+    #mbox.wait()
+   # print(mbox.read())
+   # print(mbox.read())
+    
     # Handle state transitions'
-    # switch(transition_state(left_color, right_color))
+    switch(transition_state(left_color, right_color))
     # print(state)
     if pressed:
         print("reset")
