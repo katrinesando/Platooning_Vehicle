@@ -31,7 +31,7 @@ LANE_STATES=["UNKNOWN","LEFT_LANE","RIGHT_LANE"]
 rounds=1
 state=STATES[1]
 lane_state=LANE_STATES[0]
-Speed = -150
+Speed = -130
 left_array=deque([0])
 right_array=deque([0])
 left = None
@@ -203,8 +203,6 @@ def transition_state(color_left, color_right):
     if back < allowed_dist and rounds != 1: #parking lot
         print("Should Park")
         print(back)
-        mbox.send("Parking")
-        mbox.send("NONE")
         return STATES[7]
 
     if front > allowed_dist:
@@ -331,18 +329,19 @@ def switch(state):
         wait(300)
         mbox.send("NONE")
     elif state == "PARK":
+        mbox.send("Parking")
         robot.drive(Speed,0)
-        wait(500)
-        robot.turn(-100)
-        while (front > 70):
-            front, back = update_front_back()
-            robot.drive(Speed, 0)
-        robot.turn(100)
+        wait(3000)
+        while(mbox.read()!="Close"):
+            print(mbox.read())
+            robot.drive(0, 0)
+        robot.turn(110)
+        while (mbox.read() != "End"  ):
+            print(mbox.read())
+            robot.drive(-Speed/1.2, 0)
         ev3.speaker.beep(500,100)
-        while (front > 50):
-            front, back = update_front_back()
-            robot.drive(Speed, 0)
         while(True):
+            mbox.send("NONE")
             robot.drive(0,0)
 
 # clear most common array
