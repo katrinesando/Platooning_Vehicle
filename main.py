@@ -306,8 +306,9 @@ def switch(state):
         elif lane_state=="RIGHT_LANE":
             print("right")
             robot.drive(Speed,70)
-            wait(700)
+            wait(500)
             mbox.send("NONE")
+            wait(200)
             robot.drive(Speed,0)
             wait(500)
             robot.drive(Speed,-90)
@@ -333,11 +334,9 @@ def switch(state):
         robot.drive(Speed,0)
         wait(3000)
         while(mbox.read()!="Close"):
-            print(mbox.read())
             robot.drive(0, 0)
-        robot.turn(110)
-        while (mbox.read() != "End"  ):
-            print(mbox.read())
+        robot.turn(120)
+        while (mbox.read() != "End"):
             robot.drive(-Speed/1.2, 0)
         ev3.speaker.beep(500,100)
         while(True):
