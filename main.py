@@ -23,8 +23,8 @@ sensor_right= ColorSensor(Port.S4)
 ultraSonic_front = UltrasonicSensor(Port.S2)
 ultraSonic_back = UltrasonicSensor(Port.S3)
 
-color_list_left = [(205,28,100),(211, 78, 65),(63,65,69),(120,16,77)] # 0+4=White, 1=Blue, 2=Yellow
-color_list_right = [(205,28,100),(205,84,44),(86,70,55),(205,28,100)] # 0+4=White, 1=Blue, 2=Yellow
+color_list_left = [(205,28,100),(211, 78, 65),(63,65,69),(120,16,77),(141,31,44),(225,38,83)] # 0+4-5=White, 1=Blue, 2=Yellow
+color_list_right = [(205,28,100),(205,84,44),(86,70,55),(205,28,100),(205,28,100),(205,28,100)] # 0+4-5=White, 1=Blue, 2=Yellow
 
 STATES=["DRIVE","STOP","SLOW","TURN_LEFT","TURN_RIGHT","SWITCH_LANE","HOLD", "PARK"] #All possible states the robot can have 
 LANE_STATES=["UNKNOWN","LEFT_LANE","RIGHT_LANE"]
@@ -36,6 +36,7 @@ left_array=deque([0])
 right_array=deque([0])
 left = None
 right = None
+
 white_count = 0
 isSEND=False
 
@@ -45,7 +46,7 @@ mbox =  TextMailbox('greeting',server)
 server.wait_for_connection()
 print('connected!')
 
-# Initialize the drive base.
+# Initialize the drive base
 robot = DriveBase(motor_left, motor_right, wheel_diameter=55, axle_track=95) #Check for correct Parameter 
 
 # calculating of rgb to hsv
@@ -200,7 +201,7 @@ def transition_state(color_left, color_right):
             mbox.send("Obstacle")
             isSEND=True
         return STATES[5]
-    if back < allowed_dist and rounds != 1: #parking lot
+    if back < allowed_dist/2 and rounds != 1: #parking lot
         print("Should Park")
         print(back)
         return STATES[7]
@@ -211,12 +212,12 @@ def transition_state(color_left, color_right):
             return STATES[0] # Move forward
 
         if (left_color == 1 and right_color == 2 ): # Black / White
-            if lane_state==LANE_STATES[0]:
+            if lane_state==LANE_STATES[0]:                
                 lane_state=LANE_STATES[1]
             return STATES[3]
 
         if (left_color == 2 and right_color == 1) or (left_color == 2): # White / Black
-            if lane_state==LANE_STATES[0]:
+            if lane_state==LANE_STATES[0]:                
                 lane_state=LANE_STATES[2]
             return STATES[4]
         if left_color == 3: # Green
@@ -231,13 +232,11 @@ def transition_state(color_left, color_right):
             white_count=0
             return STATES[3]
         if left_color == 4 or right_color == 4: #Blue - 3 sec stop
-            mbox.send("Hold")
+            
             
             return STATES[6]
 
         if left_color == 5 or right_color == 5: #Yellow - slow down 
-            mbox.send("Slow")
-            
             return STATES[2]
     
         if left_color == 6 and right_color == 6: #Red - lane switch
@@ -249,7 +248,7 @@ def transition_state(color_left, color_right):
 def color_num(color, color_list):
     if color == Color.BLACK: # black
         return 1
-    elif color == Color.WHITE or color == color_list[0] or color == color_list[3]: # white 
+    elif color == Color.WHITE or color == color_list[0] or color == color_list[3] or color == color_list[4] or color == color_list[5]: # white 
         return 2
     elif color == Color.GREEN: # green
         return 3
@@ -277,6 +276,7 @@ def switch(state):
     elif state ==  "STOP":
         robot.drive(0,0)
     elif state ==  "SLOW":
+        mbox.send("Slow")
         robot.drive(Speed/2,0)
         clear_array()
         wait(2000)
@@ -288,10 +288,11 @@ def switch(state):
         wait(50)
     elif state ==  "TURN_RIGHT":
         robot.drive(Speed,-30 - white_count)
-        white_count=70
+        white_count=100
         wait(50)
     elif state ==  "SWITCH_LANE": 
         if lane_state=="LEFT_LANE":
+            mbox.send("Obstacle_left")
             print("left")
             robot.drive(Speed,-70)
             wait(700)
@@ -304,6 +305,7 @@ def switch(state):
             lane_state =LANE_STATES[2]
             
         elif lane_state=="RIGHT_LANE":
+            mbox.send("Obstacle_right")
             print("right")
             robot.drive(Speed,70)
             wait(500)
@@ -324,18 +326,21 @@ def switch(state):
         clear_array()
     elif state == "HOLD":
         robot.drive(0,0)
+        mbox.send("Hold")
         wait(3000)
+        mbox.send("NONE")
         robot.drive(Speed,0)
         clear_array()
         wait(300)
-        mbox.send("NONE")
     elif state == "PARK":
-        mbox.send("Parking")
+       
         robot.drive(Speed,0)
-        wait(3000)
+        wait(1500)
+        mbox.send("Parking")
+        wait(1500)
         while(mbox.read()!="Close"):
             robot.drive(0, 0)
-        robot.turn(120)
+        robot.turn(150)
         while (mbox.read() != "End"):
             robot.drive(-Speed/1.2, 0)
         ev3.speaker.beep(500,100)
@@ -377,7 +382,7 @@ while True:
         Speed=-150
         ev3.speaker.beep(500,100)
         pressed=False
-    # print(time.time()-start)
+    print(time.time()-start)
 
 
 
