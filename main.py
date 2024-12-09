@@ -202,6 +202,7 @@ def transition_state(color_left, color_right):
             isSEND=True
         return STATES[5]
     if back < allowed_dist/2 and rounds != 1: #parking lot
+        print(back)
         print("Should Park")
         print(back)
         return STATES[7]
@@ -307,10 +308,10 @@ def switch(state):
         elif lane_state=="RIGHT_LANE":
             mbox.send("Obstacle_right")
             print("right")
-            robot.drive(Speed,70)
-            wait(500)
+            robot.drive(Speed,70) 
+            wait(400)
             mbox.send("NONE")
-            wait(200)
+            wait(300)
             robot.drive(Speed,0)
             wait(500)
             robot.drive(Speed,-90)
@@ -337,7 +338,7 @@ def switch(state):
         robot.drive(Speed,0)
         wait(1500)
         mbox.send("Parking")
-        wait(1500)
+        wait(1200)
         while(mbox.read()!="Close"):
             robot.drive(0, 0)
         robot.turn(150)
@@ -382,7 +383,7 @@ while True:
         Speed=-150
         ev3.speaker.beep(500,100)
         pressed=False
-    print(time.time()-start)
+    #print(time.time()-start)
 
 
 
